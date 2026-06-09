@@ -149,3 +149,8 @@ python manage.py test core.tests
 ## Screenshots
 
 *[Include screenshots of: Dashboard, Component Registration, Service Detail, Revenue Charts]*
+
+## 🎥 Project Demonstration
+
+You can watch a full walkthrough of the application's features here:
+**[Watch the Demo Video](https://drive.google.com/file/d/1D8SNBlGi6VLlBw5I3zOXe3eUXJIul_a4/view?usp=drive_link)**
