@@ -140,6 +140,7 @@ python manage.py test core.tests
 - ✅ **Issue Management** — Add issues per service job, select components, choose repair/new
 - ✅ **Auto Price Calculation** — Total auto-updates as issues are added/removed
 - ✅ **Payment Simulation** — Simulate payment with method selection (Cash, Card, Bank Transfer)
+- ✅ **Invoice Generation — Automatically generates itemized invoices upon payment with print support
 - ✅ **Revenue Dashboard** — Interactive Daily, Monthly, and Yearly revenue charts (Recharts)
 - ✅ **Unit Tests** — 30 tests across models, views, and forms
 - ✅ **Django Admin** — Full admin interface for all models
