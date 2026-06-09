@@ -8,6 +8,7 @@ import {
   simulatePayment
 } from '../api/serviceApi';
 import { getComponents } from '../api/componentApi';
+import { getInvoiceByService } from '../api/invoiceApi';
 import Modal from '../components/Modal';
 import StatusBadge from '../components/StatusBadge';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -28,6 +29,21 @@ export default function ServiceDetail({ addToast }) {
   const [deleteIssueTarget, setDeleteIssueTarget] = useState(null);
   const [statusEditing, setStatusEditing] = useState(false);
   const [newStatus, setNewStatus] = useState('');
+  const [invoiceModal, setInvoiceModal] = useState(false);
+  const [invoiceData, setInvoiceData] = useState(null);
+
+  const handleViewInvoice = async () => {
+    try {
+      setLoading(true);
+      const res = await getInvoiceByService(id);
+      setInvoiceData(res.data);
+      setInvoiceModal(true);
+    } catch {
+      addToast('Invoice not found or not generated yet.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const load = useCallback(() => {
     Promise.all([getService(id), getComponents()])
@@ -100,7 +116,9 @@ export default function ServiceDetail({ addToast }) {
             <p>{vehicle?.license_plate} — {vehicle?.owner_name}</p>
           </div>
           <div className="flex gap-8">
-            {!record.is_paid && (
+            {record.is_paid ? (
+              <button className="btn btn-secondary" onClick={handleViewInvoice}>🧾 View Invoice</button>
+            ) : (
               <button className="btn btn-success" onClick={() => setPayModal(true)}>💳 Process Payment</button>
             )}
             <button className="btn btn-primary" onClick={() => { setIssueForm(EMPTY_ISSUE); setIssueModal(true); }} disabled={record.is_paid}>
@@ -305,6 +323,77 @@ export default function ServiceDetail({ addToast }) {
           </button>
         </div>
       </Modal>
+
+      {/* Invoice Modal */}
+      {invoiceData && (
+        <Modal isOpen={invoiceModal} onClose={() => setInvoiceModal(false)} title={`🧾 Invoice ${invoiceData.invoice_number}`}>
+          <div style={{ background: '#fff', color: '#000', padding: 24, borderRadius: 8, fontFamily: 'monospace' }}>
+            <div style={{ textAlign: 'center', marginBottom: 24, borderBottom: '2px dashed #ccc', paddingBottom: 16 }}>
+              <h2 style={{ margin: 0, fontSize: '1.5rem', textTransform: 'uppercase' }}>VehicleServ Invoice</h2>
+              <div style={{ marginTop: 8 }}>{new Date(invoiceData.issued_at).toLocaleString()}</div>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
+              <div>
+                <strong>Billed To:</strong><br />
+                {invoiceData.owner_name}<br />
+                {invoiceData.owner_phone}
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <strong>Vehicle:</strong><br />
+                {invoiceData.vehicle_info}
+              </div>
+            </div>
+
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 24 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #000' }}>
+                  <th style={{ textAlign: 'left', padding: '8px 0' }}>Description</th>
+                  <th style={{ textAlign: 'left', padding: '8px 0' }}>Type</th>
+                  <th style={{ textAlign: 'right', padding: '8px 0' }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoiceData.line_items.map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '8px 0' }}>{item.description} ({item.component})</td>
+                    <td style={{ padding: '8px 0' }}>{item.action_type}</td>
+                    <td style={{ padding: '8px 0', textAlign: 'right' }}>{fmt(item.price)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <div style={{ width: '250px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span>Subtotal:</span>
+                  <span>{fmt(invoiceData.subtotal)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span>Labor Charge:</span>
+                  <span>{fmt(invoiceData.labor_charge)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1.2rem', marginTop: 8, borderTop: '2px solid #000', paddingTop: 8 }}>
+                  <span>Total Paid:</span>
+                  <span>{fmt(invoiceData.total_amount)}</span>
+                </div>
+                <div style={{ textAlign: 'right', marginTop: 8, color: '#666', fontStyle: 'italic' }}>
+                  Paid via {invoiceData.payment_method_display}
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ textAlign: 'center', marginTop: 32, fontSize: '0.9rem', color: '#666' }}>
+              Thank you for your business!
+            </div>
+          </div>
+          <div className="modal-footer" style={{ marginTop: 16 }}>
+            <button className="btn btn-primary" onClick={() => window.print()}>🖨️ Print Invoice</button>
+            <button className="btn btn-secondary" onClick={() => setInvoiceModal(false)}>Close</button>
+          </div>
+        </Modal>
+      )}
 
       <ConfirmDialog
         isOpen={!!deleteIssueTarget}
